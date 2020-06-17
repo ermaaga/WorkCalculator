@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Linq;
 
@@ -26,7 +26,7 @@ namespace WorkCalculator
 
             message = string.Format("Inserisci quanato costa una giornata lavorativa di {0} ore..", hoursInAday);
             Console.WriteLine(message);
-            string payInADay = Console.ReadLine();
+            double payInADay = double.Parse(Console.ReadLine()); //da aggiungere il tryParse 
             message = null;
 
 
@@ -37,13 +37,12 @@ namespace WorkCalculator
             {
                 //prende tutte le ore di un mese
                 result = result && CalculateTotalDaysInMonth(totalHoursInAMoth, hoursInAday, out totalDaysInAMonth, out message);
-
                 Console.WriteLine(message);
 
                 if (result)
                 {
                     message = null;
-                    result = result && CalculateTotalPayInMonth(totalDaysInAMonth, hoursInAday, payInADay, out totalPayInAMotnh, out message);
+                    result = result && CalculateTotalPayInMonth(totalHoursInAMoth, hoursInAday, payInADay, out totalPayInAMotnh, out message);
                 }
 
                 Console.WriteLine(message);
@@ -62,66 +61,39 @@ namespace WorkCalculator
 
         }
 
-
-
-
-
-
-        private static bool CalculateTotalPayInMonth(Giornata totalDaysInAMonth, string hoursInAday, string payInADay, out double totalPayInAMotnh, out string message)
+        private static bool CalculateTotalPayInMonth(string totalHoursInAMoth, string hoursInAday, double payInADay, out double totalPayInAMotnh, out string message)
         {
             bool result = true;
             message = null;
             totalPayInAMotnh = 0;
-            double payInAdayParsed = 0;
-            double minInHours = 0;
-            double hoursInAdayParsed = 0;
-            double totMoneyinMin = 0;
 
             try
             {
 
-                if (totalDaysInAMonth != null)
+                if (totalHoursInAMoth != null)
                 {
-                    if (payInADay != null || payInADay != string.Empty)
+                    double minInMonth = 0;
+                    if (CalculateMinutesInHours(totalHoursInAMoth, out minInMonth, out message))
                     {
-                        payInAdayParsed = double.Parse(payInADay);
-                        totalPayInAMotnh = totalDaysInAMonth.giornata * payInAdayParsed;
-
-                        if (totalDaysInAMonth.ore != 0)
+                        double minInDay = 0;
+                        if (minInMonth != 0 && CalculateMinutesInHours(hoursInAday, out minInDay, out message))
                         {
-                            minInHours = totalDaysInAMonth.ore * 60;
+                            double payInMin = payInADay / minInDay; // pagamento al minuto
+                            totalPayInAMotnh = minInMonth * payInMin;
                         }
-                        if (totalDaysInAMonth.minuti != 0)
-                        {
-                            minInHours = minInHours + totalDaysInAMonth.minuti;
-                        }
+                        else { result = false; }
 
-                        hoursInAdayParsed = double.Parse(hoursInAday);
-
-                        double min = hoursInAdayParsed * 60;
-                        totMoneyinMin = payInAdayParsed / min;
-                        double tot = totMoneyinMin * minInHours;
-
-                        totalPayInAMotnh = totalPayInAMotnh + tot;
-
-
-                        if (result)
-                        {
-                            message = string.Format("La tua paga in questo mese è {0} euro.", totalPayInAMotnh.ToString());
-                        }
                     }
-                    else
+                    if (result)
                     {
-                        message = "Non c'è il prezzo di una giornata";
+                        message = string.Format("lo stipendio calcolato per questo mese è di {0} euro", totalPayInAMotnh.ToString().Substring(0, 7));
                     }
+
                 }
                 else
                 {
                     message = "Non ci sono giornate da calcolare.";
                 }
-
-
-
 
             }
             catch (Exception e)
@@ -136,82 +108,44 @@ namespace WorkCalculator
             bool result = true;
             message = null;
             totalDaysInAMonth = null;
-            double hoursParsed, hoursInAdayParsed = 0;
-            double hours = 0;
-            double hoursInADays = 0;
-            double rest = 0;
-            double days = 0;
-            double minutes = 0;
-            string totalHours = null;
-            string totMin = null;
-            string totalHoursInADay = null;
-            string totMinInADay = null;
-            double minutesInADay = 0;
-
-
-
             try
             {
 
                 if (totalHoursInAMoth != null)
                 {
-                    result = result && CalculateHoursAndMinutes(totalHoursInAMoth, out totalHours, out totMin);
-                    hours = totalHours != null && double.TryParse(totalHours, out hoursParsed) ? hours = hoursParsed : 0;
-                    result = result && CalculateMinutes(totMin, out minutes);
-
-                    result = result && CalculateHoursAndMinutes(hoursInAday, out totalHoursInADay, out totMinInADay);
-                    hoursInADays = totalHoursInADay != null && double.TryParse(totalHoursInADay, out hoursInAdayParsed) ? hoursInADays = hoursInAdayParsed : 0;
-                    result = result && CalculateMinutes(totMinInADay, out minutesInADay);
-                    hoursInADays = (hoursInADays + minutesInADay);
-
-
-                    if (hours != 0 && hours >= hoursInADays)
+                    //calcolo i minuti al mese
+                    double minutesInMonth = 0;
+                    result = result && CalculateMinutesInHours(totalHoursInAMoth, out minutesInMonth, out message);
+                    //calcolo i minuti alla giornata
+                    double minutesInHoursDay = 0;
+                    result = result && CalculateMinutesInHours(hoursInAday, out minutesInHoursDay, out message);
+                    if (result && minutesInHoursDay != 0)
                     {
-                        rest = hours % hoursInADays;
-                        if (rest > 0)
-                        {
-                            days = hours - rest;
-                            days = days / hoursInADays;
-                        }
-                        else
-                        {
-                            days = days / hoursInADays;
-                        }
-                        rest = rest + minutes;
-                        string stringRest = rest.ToString();
-                        double doublerest = 0;
-                        if (double.TryParse(stringRest.Replace('.', ','), out doublerest))
-                        {
-                            result = result && CalculateHoursAndMinutes(stringRest.Replace('.', ','), out totalHours, out totMin);
-                            rest = totalHours != null ? double.Parse(totalHours) : 0;
-                            doublerest = totMin != null ? double.Parse(totMin) : 0;
-                            double totrest = 0;
-                            double restRest = 0;
-                            totrest = rest + totrest;
-                            if (totrest > hoursInADays)
-                            {
-                                totrest = totrest % hoursInADays;
-                                restRest = totrest - hoursInADays;
+                        double resultDays = minutesInMonth / minutesInHoursDay;
 
-                                days = days + totrest;
-                                rest = restRest;
-                            }
-                        }
-                        if (result)
+                        string resultDaysString = resultDays.ToString();
+                        string[] arryResultDaysString = resultDaysString != null ? resultDaysString.Split(',', '.') : null;
+
+                        if (arryResultDaysString[0].Length > 0)
                         {
+                            double day = double.Parse(arryResultDaysString[0]);
                             totalDaysInAMonth = new Giornata();
-                            totalDaysInAMonth.giornata = days;
-                            totalDaysInAMonth.ore = rest;
-                            totalDaysInAMonth.minuti = doublerest;
+                            if (arryResultDaysString[1].Length > 1)
+                            {
+                                double hours = 0;
+                                double minutes = 0;
+                                if (CalculateMinuteMinutesAndHours(arryResultDaysString[1], minutesInHoursDay, out hours, out minutes, out message))
+                                {
+                                    totalDaysInAMonth.ore = hours;
+                                    totalDaysInAMonth.minuti = minutes;
+                                }
+                            }
+                            totalDaysInAMonth.giornata = day;
 
+                            message = string.Format("Questo mese hai lavorato {0} giornate {1} ore e {2} minuti(arrotondati)", totalDaysInAMonth.giornata, totalDaysInAMonth.ore, totalDaysInAMonth.minuti);
                         }
-                        message = string.Format("Questo mese hai lavorato {0} giornate {1} ore e {2} minuti", days, rest, doublerest);
+                    }
 
-                    }
-                    else
-                    {
-                        message = "è stato riscontrato un problema durante il calcolo delle giorante";
-                    }
                 }
 
             }
@@ -222,75 +156,70 @@ namespace WorkCalculator
             return result;
         }
 
-        private static bool CalculateHoursAndMinutes(string totalHoursInAMoth, out string totalHours, out string totMin)
+        private static bool CalculateMinuteMinutesAndHours(string dayRest, double minutesInHoursDay, out double hours, out double min, out string message)
+        {
+            message = null;
+            hours = 0;
+            min = 0;
+            try
+            {
+                if (dayRest != null)
+                {
+                    //ore restanti
+                    dayRest = string.Format("0.{0}", dayRest);
+                    double hour = double.Parse(dayRest);
+                    double hourRes = hour * minutesInHoursDay;
+                    hourRes = hourRes / 60;
+
+                    string[] hourResArray = hourRes.ToString().Split(',', '.');
+                    hours = double.Parse(hourResArray[0]);
+
+                    if (hourResArray[1].Length > 1)
+                    {
+                        min = double.Parse(hourResArray[1].Substring(0, 2));
+                    }
+                    //minuti restati 
+                }
+
+            }
+            catch (Exception ex)
+            {
+                message = string.Format("{0}", ex.Message);
+            }
+            return true;
+        }
+
+        private static bool CalculateMinutesInHours(string totalHoursInAMoth, out double totMinInMonth, out string message)
         {
             bool result = true;
-            totalHours = null;
-            totMin = null;
+            message = null;
+            double minInAMonth = 0;
+            totMinInMonth = 0;
             try
             {
                 string[] arryTotHours = totalHoursInAMoth != null ? totalHoursInAMoth.Split(',') : null;
-
-                totalHours = arryTotHours != null && arryTotHours[0] != null ? arryTotHours[0] : null;
-                if (arryTotHours.Length > 1)
+                if (arryTotHours[0].Length > 0)
                 {
-                    totMin = arryTotHours[1].Length >= 1 ? arryTotHours[1] : null;
+                    double hoursInAMoth = double.Parse(arryTotHours[0]);
+                    hoursInAMoth = hoursInAMoth * 60;
+                    if (arryTotHours.Length > 1)
+                    {
+                        minInAMonth = double.Parse(arryTotHours[1]);
+                    }
+                    totMinInMonth = hoursInAMoth + minInAMonth;
+                }
+                else
+                {
+                    message = "Non sono state inserite ore.";
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 
-                throw new NotImplementedException();
+                message = string.Format("{0}", ex.Message);
             }
             return result;
 
-        }
-
-        private static bool CalculateMinutes(string totMin, out double minutes)
-        {
-            bool result = true;
-            minutes = 0;
-            double minParsed = 0;
-            try
-            {
-                double var = totMin != null && double.TryParse(totMin, out minParsed) ? minutes = minParsed : 0;
-                if (var != 0)
-                {
-
-                    if (var >= 0 && var <= 15)
-                    {
-                        minutes = var + 10;
-                    }
-                    else if (var > 15 && var <= 30)
-                    {
-                        minutes = var + 20;
-                    }
-                    else if (var > 30 && var <= 45)
-                    {
-                        minutes = var + 30;
-                    }
-                    else if (var > 45 && var <= 60)
-                    {
-                        minutes = var + 40;
-                    }
-                    else
-                    {
-                        result = false;
-                    }
-                    if (result)
-                    {
-                        minutes = minutes / 100;
-                    }
-
-                }
-
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-            return result;
         }
 
         protected class Message
